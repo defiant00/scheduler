@@ -3,15 +3,22 @@ using System.Collections.Generic;
 
 namespace Scheduler
 {
-	public class Schedule
+	public class TaskCollection
+	{
+		public List<Schedule.Task> Tasks = new List<Schedule.Task>();
+	}
+
+	public class Schedule : TaskCollection
 	{
 		public DateTime Start;
-		public List<Task> Tasks = new List<Task>();
 
-		public class Task
+		public void TrimDescriptions()
 		{
-			List<Task> Tasks = new List<Task>();
+			foreach (var t in Tasks) { t.TrimDescriptions(); }
+		}
 
+		public class Task : TaskCollection
+		{
 			public string Label;
 			public string Description;
 			public DateTime Start;
@@ -53,6 +60,12 @@ namespace Scheduler
 					return (complete.TotalMilliseconds / total.TotalMilliseconds) * 100;
 				}
 				set { _Percent = value; }
+			}
+
+			public void TrimDescriptions()
+			{
+				Description = Description.Trim();
+				foreach (var t in Tasks) { t.TrimDescriptions(); }
 			}
 		}
 	}
