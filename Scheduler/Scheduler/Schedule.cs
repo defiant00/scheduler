@@ -77,19 +77,17 @@ namespace Scheduler
 
 		public class Task : TaskCollection
 		{
+			static DateTime UNSET { get { return DateTime.MinValue; } }
+
 			public string Label;
 			public string Description;
 			public List<Task> Parents = new List<Task>();
 			public List<Task> Children = new List<Task>();
 
-			DateTime _Start = DateTime.MaxValue;
+			DateTime _Start = UNSET;
 			public DateTime Start
 			{
-				get
-				{
-					return Tasks.Count == 0 ? _Start : Tasks.Min(t => t.Start);
-				}
-				set { _Start = value; }
+				get { return Tasks.Count == 0 ? _Start : Tasks.Min(t => t.Start); }
 			}
 
 			TimeSpan _Time;
@@ -150,23 +148,23 @@ namespace Scheduler
 
 			public void GetSetCount(SetCount sc)
 			{
-				if (Start == DateTime.MaxValue) { sc.Unset++; }
+				if (_Start == UNSET) { sc.Unset++; }
 				else { sc.Set++; }
 				foreach (var t in Tasks) { t.GetSetCount(sc); }
 			}
 
 			public void CalculateTime(DateTime baseStart)
 			{
-				if (Start == DateTime.MaxValue)
+				if (_Start == UNSET)
 				{
-					if (Parents.Count == 0) { Start = baseStart; }
+					if (Parents.Count == 0) { _Start = baseStart; }
 					else
 					{
 						bool allSet = true;
 						DateTime latest = baseStart;
 						foreach (var p in Parents)
 						{
-							if (p.Start == DateTime.MaxValue)
+							if (p.Start == UNSET)
 							{
 								allSet = false;
 								break;
@@ -177,13 +175,20 @@ namespace Scheduler
 								if (d > latest) { latest = d; }
 							}
 						}
-						if (allSet) { Start = latest; }
+						if (allSet) { _Start = latest; }
 					}
 				}
-				else
+
+				// Not an else since we might have just set _Start.
+				if (_Start != UNSET)
 				{
-					foreach (var t in Tasks) { t.CalculateTime(Start); }
+					foreach (var t in Tasks) { t.CalculateTime(_Start); }
 				}
+			}
+
+			public override string ToString()
+			{
+				return $"{Label} : {_Start} to {_Start + Time}";
 			}
 		}
 
