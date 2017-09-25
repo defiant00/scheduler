@@ -14,6 +14,8 @@ namespace Scheduler
 			Links,
 		}
 
+		class Link { public string Parent, Child; }
+
 		static Regex settingRegex = new Regex(@"([a-zA-Z0-9-_]*)[ \t]*:(.*)");
 		static Regex taskRegex = new Regex(@";([a-zA-Z0-9-_]*)[ \t]*(?:([0-9.]*)%)?[ \t]*(?:([0-9.]*)([dhm]))?[ \t]*(.*)");
 
@@ -23,6 +25,7 @@ namespace Scheduler
 			var tasks = new List<TaskDepth>();
 			tasks.Add(new TaskDepth { Task = sch, Depth = 0 });
 			var mode = ParseMode.Settings;
+			var links = new List<Link>();
 			string[] lines = File.ReadAllLines(file);
 			foreach (string l in lines)
 			{
@@ -116,11 +119,22 @@ namespace Scheduler
 				else
 				{
 					// Links
+					string[] items = line.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+					for (int i = 1; i < items.Length; i++)
+					{
+						links.Add(new Link { Parent = items[i - 1], Child = items[i] });
+					}
 				}
 			}
 
 			// Trim all the descriptions since they might have empty lines at the end.
 			sch.TrimDescriptions();
+
+			// Process and add all task links.
+			foreach (var l in links) { sch.AddLink(l.Parent, l.Child); }
+
+			// Calculate the start and end times of all tasks.
+			sch.CalculateTimes();
 		}
 
 		class TaskDepth

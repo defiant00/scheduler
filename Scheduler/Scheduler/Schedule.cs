@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Scheduler
 {
@@ -12,16 +13,84 @@ namespace Scheduler
 	{
 		public DateTime Start;
 
+		public List<Link> TaskLinks = new List<Link>();
+
 		public void TrimDescriptions()
 		{
 			foreach (var t in Tasks) { t.TrimDescriptions(); }
+		}
+
+		public void AddLink(string parent, string child)
+		{
+			var pTask = GetTask(parent);
+			var cTask = GetTask(child);
+			if (pTask != null && cTask != null)
+			{
+				TaskLinks.Add(new Link { Parent = pTask, Child = cTask });
+				pTask.Children.Add(cTask);
+				cTask.Parents.Add(pTask);
+			}
+			else if (pTask == null)
+			{
+				throw new Exception("Could not find task '" + parent + "'");
+			}
+			else
+			{
+				throw new Exception("Could not find task '" + child + "'");
+			}
+		}
+
+		public void CalculateTimes()
+		{
+			var priorSC = new SetCount();
+			var sc = GetSetCount();
+			while (sc.Unset != priorSC.Unset)
+			{
+				priorSC = sc;
+
+				foreach (var t in Tasks) { t.CalculateTime(Start); }
+
+				sc = GetSetCount();
+			}
+			if (sc.Unset > 0)
+			{
+				throw new Exception("Unable to set all task times.");
+			}
+		}
+
+		private Task GetTask(string label)
+		{
+			foreach (var t in Tasks)
+			{
+				var rTask = t.GetTask(label);
+				if (rTask != null) { return rTask; }
+			}
+			return null;
+		}
+
+		private SetCount GetSetCount()
+		{
+			var sc = new SetCount();
+			foreach (var t in Tasks) { t.GetSetCount(sc); }
+			return sc;
 		}
 
 		public class Task : TaskCollection
 		{
 			public string Label;
 			public string Description;
-			public DateTime Start;
+			public List<Task> Parents = new List<Task>();
+			public List<Task> Children = new List<Task>();
+
+			DateTime _Start = DateTime.MaxValue;
+			public DateTime Start
+			{
+				get
+				{
+					return Tasks.Count == 0 ? _Start : Tasks.Min(t => t.Start);
+				}
+				set { _Start = value; }
+			}
 
 			TimeSpan _Time;
 			public TimeSpan Time
@@ -67,6 +136,67 @@ namespace Scheduler
 				Description = Description.Trim();
 				foreach (var t in Tasks) { t.TrimDescriptions(); }
 			}
+
+			public Task GetTask(string label)
+			{
+				if (Label == label) { return this; }
+				foreach (var t in Tasks)
+				{
+					var rTask = t.GetTask(label);
+					if (rTask != null) { return rTask; }
+				}
+				return null;
+			}
+
+			public void GetSetCount(SetCount sc)
+			{
+				if (Start == DateTime.MaxValue) { sc.Unset++; }
+				else { sc.Set++; }
+				foreach (var t in Tasks) { t.GetSetCount(sc); }
+			}
+
+			public void CalculateTime(DateTime baseStart)
+			{
+				if (Start == DateTime.MaxValue)
+				{
+					if (Parents.Count == 0) { Start = baseStart; }
+					else
+					{
+						bool allSet = true;
+						DateTime latest = baseStart;
+						foreach (var p in Parents)
+						{
+							if (p.Start == DateTime.MaxValue)
+							{
+								allSet = false;
+								break;
+							}
+							else
+							{
+								var d = p.Start + p.Time;
+								if (d > latest) { latest = d; }
+							}
+						}
+						if (allSet) { Start = latest; }
+					}
+				}
+				else
+				{
+					foreach (var t in Tasks) { t.CalculateTime(Start); }
+				}
+			}
+		}
+
+		public class Link
+		{
+			public Task Parent, Child;
+			public override string ToString() { return $"{Parent.Label} -> {Child.Label}"; }
+		}
+
+		public class SetCount
+		{
+			public int Set, Unset;
+			public override string ToString() { return $"Set: {Set}, Unset: {Unset}"; }
 		}
 	}
 }
