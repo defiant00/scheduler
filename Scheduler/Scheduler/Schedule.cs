@@ -16,9 +16,12 @@ namespace Scheduler
 
 		public List<Link> TaskLinks = new List<Link>();
 
+		// All metadata, key is lowercase trimmed, value is display value.
+		public Dictionary<string, string> Metadata = new Dictionary<string, string>();
+
 		public void ParseDescriptions()
 		{
-			foreach (var t in Tasks) { t.ParseDescriptions(); }
+			foreach (var t in Tasks) { t.ParseDescriptions(this); }
 		}
 
 		public void AddLink(string parent, string child)
@@ -79,7 +82,7 @@ namespace Scheduler
 		public class Task : TaskCollection
 		{
 			static DateTime UNSET { get { return DateTime.MinValue; } }
-			static Regex metadataRegex = new Regex(@"\[([^:]+):([^]]+)]");
+			static Regex metadataRegex = new Regex(@"\[([^:]+):([^]]*)]");
 
 			public string Label;
 			public string Description;
@@ -132,15 +135,14 @@ namespace Scheduler
 				set { _Percent = value; }
 			}
 
-			public void ParseDescriptions()
+			public void ParseDescriptions(Schedule schedule)
 			{
 				foreach (Match m in metadataRegex.Matches(Description))
 				{
-					SetMetadata(m.Groups[1].Value.Trim(), m.Groups[2].Value.Trim());
+					SetMetadata(schedule, m.Groups[1].Value.Trim(), m.Groups[2].Value.Trim());
 				}
-				Description = metadataRegex.Replace(Description, "");
-				Description = Description.Trim();
-				foreach (var t in Tasks) { t.ParseDescriptions(); }
+				Description = metadataRegex.Replace(Description, "").Trim();
+				foreach (var t in Tasks) { t.ParseDescriptions(schedule); }
 			}
 
 			public Task GetTask(string label)
@@ -194,7 +196,7 @@ namespace Scheduler
 				}
 			}
 
-			private void SetMetadata(string key, string val)
+			private void SetMetadata(Schedule schedule, string key, string val)
 			{
 				switch (key.ToLower())
 				{
@@ -202,7 +204,9 @@ namespace Scheduler
 						_Start = DateTime.Parse(val);
 						break;
 					default:
-						Metadata[key] = val;
+						string lKey = key.ToLower();
+						if (!string.IsNullOrEmpty(val)) { Metadata[lKey] = val; }
+						if (!schedule.Metadata.ContainsKey(lKey)) { schedule.Metadata[lKey] = key; }
 						break;
 				}
 			}

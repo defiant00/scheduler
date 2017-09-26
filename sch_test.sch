@@ -1,16 +1,16 @@
 start:9/19/2017 8:00 AM
 
 /tasks
-;1 50% 30m Do a "thing" [priority:low]
+;1 50% 30m Do a "thing" [User:][Priority:low]
 ;2 3.5h Do something else
 with multiple lines [user:KC]
-;g1 a group
+;g1 a group[priority : middling]
 > ;s1 sub [start:9/21/2017 8 AM]
 > > ;a 1h parallel
-> > ;b 2h sub-tasks
+> > ;b 60% 2h sub-tasks
 with
 more descriptions and "a quote" and such
-[user:Aaron][priority:Critical]
+[user:Aaron][priOrIty:Critical]
 > > ;c 0.5h after another
 > ;4 3h In parallel
 ;5 2h And after
