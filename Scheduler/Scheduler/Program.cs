@@ -6,7 +6,7 @@ namespace Scheduler
 	{
 		static void Main(string[] args)
 		{
-			Console.WriteLine("Schedule Generator v0.2");
+			Console.WriteLine("Schedule Generator v0.3");
 
 			var config = new Config(args);
 
@@ -19,13 +19,12 @@ namespace Scheduler
 				Console.WriteLine("    /wait        - Waits for a keypress once the program is finished.");
 				Console.WriteLine();
 				Console.WriteLine("Output types (comma-separated):");
-				Console.WriteLine("    html");
-				Console.WriteLine("    png");
+				Console.WriteLine("    csv");
 				Console.WriteLine("    text");
 			}
 			else
 			{
-				string[] outputs = config["out"].Split(',');
+				string[] outputs = config["out"].ToLower().Split(',');
 				foreach (string file in config.Files)
 				{
 					ScheduleGen.ProcessFile(file, outputs);

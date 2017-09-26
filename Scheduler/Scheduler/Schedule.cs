@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Scheduler
 {
@@ -15,9 +16,9 @@ namespace Scheduler
 
 		public List<Link> TaskLinks = new List<Link>();
 
-		public void TrimDescriptions()
+		public void ParseDescriptions()
 		{
-			foreach (var t in Tasks) { t.TrimDescriptions(); }
+			foreach (var t in Tasks) { t.ParseDescriptions(); }
 		}
 
 		public void AddLink(string parent, string child)
@@ -78,9 +79,11 @@ namespace Scheduler
 		public class Task : TaskCollection
 		{
 			static DateTime UNSET { get { return DateTime.MinValue; } }
+			static Regex metadataRegex = new Regex(@"\[([^:]+):([^]]+)]");
 
 			public string Label;
 			public string Description;
+			public Dictionary<string, string> Metadata = new Dictionary<string, string>();
 			public List<Task> Parents = new List<Task>();
 			public List<Task> Children = new List<Task>();
 
@@ -120,8 +123,8 @@ namespace Scheduler
 
 					foreach (var t in Tasks)
 					{
-						total.Add(t.Time);
-						complete.Add(new TimeSpan((long)(t.Time.Ticks * (t.Percent / 100))));
+						total = total.Add(t.Time);
+						complete = complete.Add(new TimeSpan((long)(t.Time.Ticks * (t.Percent / 100))));
 					}
 
 					return (complete.TotalMilliseconds / total.TotalMilliseconds) * 100;
@@ -129,10 +132,15 @@ namespace Scheduler
 				set { _Percent = value; }
 			}
 
-			public void TrimDescriptions()
+			public void ParseDescriptions()
 			{
+				foreach (Match m in metadataRegex.Matches(Description))
+				{
+					SetMetadata(m.Groups[1].Value.Trim(), m.Groups[2].Value.Trim());
+				}
+				Description = metadataRegex.Replace(Description, "");
 				Description = Description.Trim();
-				foreach (var t in Tasks) { t.TrimDescriptions(); }
+				foreach (var t in Tasks) { t.ParseDescriptions(); }
 			}
 
 			public Task GetTask(string label)
@@ -183,6 +191,19 @@ namespace Scheduler
 				if (_Start != UNSET)
 				{
 					foreach (var t in Tasks) { t.CalculateTime(_Start); }
+				}
+			}
+
+			private void SetMetadata(string key, string val)
+			{
+				switch (key.ToLower())
+				{
+					case "start":
+						_Start = DateTime.Parse(val);
+						break;
+					default:
+						Metadata[key] = val;
+						break;
 				}
 			}
 

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Scheduler.Output;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -127,14 +128,26 @@ namespace Scheduler
 				}
 			}
 
-			// Trim all the descriptions since they might have empty lines at the end.
-			sch.TrimDescriptions();
+			// Parse and trim all the descriptions since they might have metadata, or empty lines at the end.
+			sch.ParseDescriptions();
 
 			// Process and add all task links.
 			foreach (var l in links) { sch.AddLink(l.Parent, l.Child); }
 
 			// Calculate the start and end times of all tasks.
 			sch.CalculateTimes();
+
+			var outputFuncs = new Dictionary<string, Action<string, Schedule>> {
+				{"text", Text.CreateOutput},
+				{"csv", CSV.CreateOutput},
+			};
+
+			// Do the output functions.
+			foreach (string o in outputs)
+			{
+				if (outputFuncs.ContainsKey(o)) { outputFuncs[o](file, sch); }
+				else { throw new Exception("Unknown output method " + o); }
+			}
 		}
 
 		class TaskDepth
