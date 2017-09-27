@@ -18,6 +18,7 @@ namespace Scheduler
 		class Link { public string Parent, Child; }
 
 		static Regex settingRegex = new Regex(@"([a-zA-Z0-9-_]*)[ \t]*:(.*)");
+		static Regex taskStartRegex = new Regex(@"^[ \t>]*;");
 		static Regex taskRegex = new Regex(@";([a-zA-Z0-9-_]*)[ \t]*(?:([0-9.]*)%)?[ \t]*(?:([0-9.]*)([dhm]))?[ \t]*(.*)");
 
 		public static void ProcessFile(string file, string[] outputs)
@@ -66,7 +67,7 @@ namespace Scheduler
 				}
 				else if (mode == ParseMode.Tasks)
 				{
-					if (line.StartsWith(";") || line.StartsWith(">"))
+					if (taskStartRegex.IsMatch(line))
 					{
 						int lineDepth = 0;
 						while (line.StartsWith(">"))
