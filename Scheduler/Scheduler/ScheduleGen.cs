@@ -54,13 +54,16 @@ namespace Scheduler
 					var match = settingRegex.Match(line);
 					if (match.Success)
 					{
-						string lbl = match.Groups[1].Value;
+						string key = match.Groups[1].Value.Trim().ToLower();
 						string val = match.Groups[2].Value.Trim();
 
-						switch (lbl.ToLower())
+						switch (key)
 						{
 							case "start":
 								sch.Start = DateTime.Parse(val);
+								break;
+							default:
+								sch.Metadata[key] = val;
 								break;
 						}
 					}
@@ -139,8 +142,9 @@ namespace Scheduler
 			sch.CalculateTimes();
 
 			var outputFuncs = new Dictionary<string, Action<string, Schedule>> {
-				{"text", Text.CreateOutput},
 				{"csv", CSV.CreateOutput},
+				{"png_g", PngGantt.CreateOutput},
+				{"text", Text.CreateOutput},
 			};
 
 			// Do the output functions.

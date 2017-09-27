@@ -6,7 +6,7 @@ namespace Scheduler
 	{
 		static void Main(string[] args)
 		{
-			Console.WriteLine("Schedule Generator v0.5");
+			Console.WriteLine("Schedule Generator v0.6");
 
 			var config = new Config(args);
 
@@ -19,8 +19,9 @@ namespace Scheduler
 				Console.WriteLine("    /wait        - Waits for a keypress once the program is finished.");
 				Console.WriteLine();
 				Console.WriteLine("Output types (comma-separated):");
-				Console.WriteLine("    csv");
-				Console.WriteLine("    text");
+				Console.WriteLine("    csv   - CSV file to import into Excel.");
+				Console.WriteLine("    png_g - PNG image of a Gantt chart.");
+				Console.WriteLine("    text  - Simple text representation.");
 			}
 			else
 			{

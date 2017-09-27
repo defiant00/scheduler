@@ -16,8 +16,10 @@ namespace Scheduler
 
 		public List<Link> TaskLinks = new List<Link>();
 
-		// All metadata, key is lowercase trimmed, value is display value.
 		public Dictionary<string, string> Metadata = new Dictionary<string, string>();
+
+		// All metadata, key is lowercase trimmed, value is display value.
+		public Dictionary<string, string> AllTaskMetadata = new Dictionary<string, string>();
 
 		public void ParseDescriptions()
 		{
@@ -210,7 +212,7 @@ namespace Scheduler
 					default:
 						string lKey = key.ToLower();
 						if (!string.IsNullOrEmpty(val)) { Metadata[lKey] = val; }
-						if (!schedule.Metadata.ContainsKey(lKey)) { schedule.Metadata[lKey] = key; }
+						if (!schedule.AllTaskMetadata.ContainsKey(lKey)) { schedule.AllTaskMetadata[lKey] = key; }
 						break;
 				}
 			}

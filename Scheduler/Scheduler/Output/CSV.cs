@@ -11,10 +11,10 @@ namespace Scheduler.Output
 			using (var writer = new StreamWriter(input + ".csv"))
 			{
 				writer.Write("Parents,Label,Description,Start,End,Time,Percent");
-				foreach (string k in schedule.Metadata.Keys)
+				foreach (string k in schedule.AllTaskMetadata.Keys)
 				{
 					writer.Write(",");
-					writer.Write(schedule.Metadata[k]);
+					writer.Write(schedule.AllTaskMetadata[k]);
 				}
 				writer.WriteLine();
 				foreach (var t in schedule.Tasks) { WriteTask(schedule, writer, t, ""); }
@@ -25,11 +25,11 @@ namespace Scheduler.Output
 		{
 			string lbl = string.IsNullOrEmpty(group) ? task.Label : (task.Label + " in " + group);
 			writer.Write($"{GetParentsString(task)},{FormatVal(lbl)},{FormatVal(task.Description)},{FormatVal(task.Start.ToString())},{FormatVal((task.Start + task.Time).ToString())},{FormatVal(task.Time.ToString())},{FormatVal(task.Percent + "%")}");
-			if (schedule.Metadata.Count > 0)
+			if (schedule.AllTaskMetadata.Count > 0)
 			{
 				writer.Write(",");
 				var vals = new List<string>();
-				foreach (string k in schedule.Metadata.Keys)
+				foreach (string k in schedule.AllTaskMetadata.Keys)
 				{
 					string val = "";
 					if (task.Metadata.ContainsKey(k)) { val = task.Metadata[k]; }
