@@ -6,7 +6,7 @@ namespace Scheduler
 	{
 		static void Main(string[] args)
 		{
-			Console.WriteLine("Schedule Generator v0.4");
+			Console.WriteLine("Schedule Generator v0.5");
 
 			var config = new Config(args);
 

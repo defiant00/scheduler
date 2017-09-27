@@ -121,16 +121,20 @@ namespace Scheduler
 				{
 					if (Tasks.Count == 0) { return _Percent; }
 
-					var total = new TimeSpan();
-					var complete = new TimeSpan();
+					var totalTime = new TimeSpan();
+					var completeTime = new TimeSpan();
+					double totalPercent = Tasks.Count * 100;
+					double completePercent = 0;
 
 					foreach (var t in Tasks)
 					{
-						total = total.Add(t.Time);
-						complete = complete.Add(new TimeSpan((long)(t.Time.Ticks * (t.Percent / 100))));
+						double percent = t.Percent;
+						totalTime = totalTime.Add(t.Time);
+						completeTime = completeTime.Add(new TimeSpan((long)(t.Time.Ticks * (percent / 100))));
+						completePercent += percent;
 					}
 
-					return (complete.TotalMilliseconds / total.TotalMilliseconds) * 100;
+					return totalTime.TotalMilliseconds > 0 ? (completeTime.TotalMilliseconds / totalTime.TotalMilliseconds) * 100 : (completePercent / totalPercent);
 				}
 				set { _Percent = value; }
 			}

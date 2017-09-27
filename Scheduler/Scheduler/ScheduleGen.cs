@@ -17,9 +17,9 @@ namespace Scheduler
 
 		class Link { public string Parent, Child; }
 
-		static Regex settingRegex = new Regex(@"([a-zA-Z0-9-_]*)[ \t]*:(.*)");
+		static Regex settingRegex = new Regex(@"([^ \t:]*)[ \t]*:(.*)");
 		static Regex taskStartRegex = new Regex(@"^[ \t>]*;");
-		static Regex taskRegex = new Regex(@";([a-zA-Z0-9-_]*)[ \t]*(?:([0-9.]*)%)?[ \t]*(?:([0-9.]*)([dhm]))?[ \t]*(.*)");
+		static Regex taskRegex = new Regex(@";([^ \t]+)[ \t]*(?:([0-9.]*)%)?[ \t]*(?:([0-9.]*)([dhm]))?[ \t]*(.*)");
 
 		public static void ProcessFile(string file, string[] outputs)
 		{
