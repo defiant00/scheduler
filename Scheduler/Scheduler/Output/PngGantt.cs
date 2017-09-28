@@ -36,7 +36,8 @@ namespace Scheduler.Output
 
 			var font = new Font("Arial", 8);
 			var fontBrush = new SolidBrush(Color.Black);
-			var gridPen = new Pen(Color.FromArgb(128, 192, 255));
+			var gridPen = new Pen(Color.FromArgb(128, 192, 255), 2);
+			var quarterPen = new Pen(Color.FromArgb(128, 192, 255));
 			var subPen = new Pen(Color.FromArgb(224, 224, 255));
 			var dateBrush = new SolidBrush(Color.Blue);
 
@@ -52,7 +53,7 @@ namespace Scheduler.Output
 			var g = Graphics.FromImage(img);
 			g.SmoothingMode = SmoothingMode.AntiAlias;
 			g.Clear(Color.White);
-			DrawDateGrid(img, g, font, dateBrush, gridPen, subPen, start, end, dayWidth, padding, hourGrid);
+			DrawDateGrid(img, g, font, dateBrush, gridPen, quarterPen, subPen, start, end, dayWidth, padding, hourGrid);
 
 			var c_incomplete = Color.Red;
 			var c_complete = Color.Blue;
@@ -139,7 +140,7 @@ namespace Scheduler.Output
 			}
 		}
 
-		static void DrawDateGrid(Image img, Graphics g, Font font, Brush fontBrush, Pen gridPen, Pen subPen, DateTime start, DateTime end, int dayWidth, int padding, bool hours)
+		static void DrawDateGrid(Image img, Graphics g, Font font, Brush fontBrush, Pen gridPen, Pen quarterPen, Pen subPen, DateTime start, DateTime end, int dayWidth, int padding, bool hours)
 		{
 			DateTime curr = start.Date;
 			int x = 0;
@@ -149,10 +150,15 @@ namespace Scheduler.Output
 				if (x >= 0 && x < img.Width)
 				{
 					bool main = curr.Hour == 0;
-					g.DrawLine((main ? gridPen : subPen), x, (main ? 0 : 16), x, img.Height);
+					bool quarter = curr.Hour % 6 == 0;
+					g.DrawLine((main ? gridPen : (quarter ? quarterPen : subPen)), x, (quarter ? 0 : 16), x, img.Height);
 					if (main)
 					{
 						g.DrawString($"{curr.ToShortDateString()} ({curr.DayOfWeek})", font, fontBrush, x + 1, 2);
+					}
+					else if (hours && quarter)
+					{
+						g.DrawString(curr.Hour.ToString(), font, fontBrush, x + 1, 2);
 					}
 				}
 				curr = hours ? curr.AddHours(1) : curr.AddDays(1);
@@ -176,7 +182,11 @@ namespace Scheduler.Output
 				a.TextRect = new Rectangle(x + 2, y + 2, (int)size.Width, (int)size.Height);
 				a.Rect = new Rectangle(x, y, w, a.TextRect.Height + 4);
 
-				if (a.Rect.Width == 0) { a.Rect.Width = 12; }
+				if (a.Rect.Width == 0)
+				{
+					a.Rect.X -= 6;
+					a.Rect.Width = 12;
+				}
 				if (a.TextRect.Width + 4 > a.Rect.Width) { a.TextRect.X = a.Rect.Right + 2; }
 
 				areas.Add(a);
