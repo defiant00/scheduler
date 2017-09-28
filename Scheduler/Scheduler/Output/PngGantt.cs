@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Linq;
 
@@ -47,6 +48,7 @@ namespace Scheduler.Output
 
 			var img = new Bitmap(width + 2 * padding, height + 2 * padding, PixelFormat.Format32bppArgb);
 			var g = Graphics.FromImage(img);
+			g.SmoothingMode = SmoothingMode.AntiAlias;
 			g.Clear(Color.White);
 			DrawDateGrid(img, g, font, dateBrush, gridPen, start, end, dayWidth, padding);
 
@@ -54,8 +56,6 @@ namespace Scheduler.Output
 			var c_complete = Color.Blue;
 
 			var connPen = new Pen(Color.DarkGray);
-			var groupIncPen = new Pen(c_incomplete, 4);
-			var groupComPen = new Pen(c_complete, 4);
 			var incompletePen = new Pen(c_incomplete);
 			var completePen = new Pen(c_complete);
 			var areaBrush = new SolidBrush(Color.FromArgb(150, 255, 255, 255));
@@ -65,16 +65,21 @@ namespace Scheduler.Output
 
 			foreach (var c in connections)
 			{
-				g.DrawLine(connPen, c.Parent.Rect.Right + padding + +1, c.Parent.Rect.Y + padding + c.Parent.Rect.Height / 2, c.Child.Rect.X + padding - 1, c.Child.Rect.Y + padding + c.Child.Rect.Height / 2);
+				var pp = new Rectangle(c.Parent.Rect.X + padding, c.Parent.Rect.Y + padding, c.Parent.Rect.Width, c.Parent.Rect.Height);
+				var pc = new Rectangle(c.Child.Rect.X + padding, c.Child.Rect.Y + padding, c.Child.Rect.Width, c.Child.Rect.Height);
+				DrawConnection(g, pp, pc, connPen);
 			}
 
 			foreach (var a in areas)
 			{
 				if (a.Task.Tasks.Count > 0)
 				{
-					g.DrawLine(a.Task.Percent == 100 ? groupComPen : groupIncPen, a.Rect.X + padding, a.Rect.Y + padding + a.Rect.Height / 2, a.Rect.Right + padding, a.Rect.Y + padding + a.Rect.Height / 2);
+					const int groupThickness = 3;
+
+					var pr = new Rectangle(a.Rect.X + padding, a.Rect.Y + padding, a.Rect.Width, a.Rect.Height);
+					g.FillPolygon(a.Task.Percent == 100 ? completeBrush : incompleteBrush, new[] { new Point(pr.X, pr.Bottom), new Point(pr.X, pr.Y), new Point(pr.Right, pr.Y), new Point(pr.Right, pr.Bottom), new Point(pr.Right - groupThickness, pr.Y + groupThickness), new Point(pr.X + groupThickness, pr.Y + groupThickness) });
 				}
-				else if (a.Rect.Width > 0)
+				else if (a.Task.Time > TimeSpan.Zero)
 				{
 					var r = new Rectangle(a.Rect.X + padding, a.Rect.Y + padding, a.Rect.Width, a.Rect.Height);
 					int perSplit = (int)(r.Width * a.Task.Percent / 100);
@@ -84,13 +89,52 @@ namespace Scheduler.Output
 				}
 				else
 				{
-					g.FillRectangle(a.Task.Percent == 100 ? completeBrush : incompleteBrush, a.Rect.X + padding - 4, a.Rect.Y + padding + a.Rect.Height / 2 - 4, 8, 8);
+					int px = a.Rect.X + padding;
+					int py = a.Rect.Y + padding;
+					int hw = a.Rect.Width / 2;
+					int hh = a.Rect.Height / 2;
+					g.FillPolygon(a.Task.Percent == 100 ? completeBrush : incompleteBrush, new[] { new Point(px + hw, py), new Point(px, py + hh), new Point(px + hw, py + a.Rect.Height), new Point(px + a.Rect.Width, py + hh) });
 				}
 
 				g.DrawString(a.DisplayText, font, fontBrush, a.TextRect.X + padding, a.TextRect.Y + padding);
 			}
 
 			img.Save(input + ".gantt.png", ImageFormat.Png);
+		}
+
+		static void DrawConnection(Graphics g, Rectangle parent, Rectangle child, Pen pen)
+		{
+			var points = new List<Point>();
+			var startPoint = new Point(parent.Right + 1, parent.Y + parent.Height / 2);
+			points.Add(startPoint);
+			var offsetPoint = new Point(startPoint.X + 4, startPoint.Y);
+			points.Add(offsetPoint);
+			var endPoint = new Point(child.X + 6, (parent.Y < child.Y ? child.Y - 1 : child.Bottom + 1));
+
+			if (offsetPoint.X < endPoint.X)
+			{
+				points.Add(new Point(endPoint.X, offsetPoint.Y));
+			}
+			else
+			{
+				int y = offsetPoint.Y > endPoint.Y ? parent.Y - 2 : parent.Bottom + 2;
+				points.Add(new Point(offsetPoint.X, y));
+				points.Add(new Point(endPoint.X, y));
+			}
+
+			points.Add(endPoint);
+
+			g.DrawLines(pen, points.ToArray());
+
+			const int arrowSize = 4;
+			if (parent.Y < child.Y)
+			{
+				g.FillPolygon(pen.Brush, new[] { endPoint, new Point(endPoint.X - arrowSize, endPoint.Y - arrowSize), new Point(endPoint.X + arrowSize, endPoint.Y - arrowSize) });
+			}
+			else
+			{
+				g.FillPolygon(pen.Brush, new[] { endPoint, new Point(endPoint.X + arrowSize, endPoint.Y + arrowSize), new Point(endPoint.X - arrowSize, endPoint.Y + arrowSize) });
+			}
 		}
 
 		static void DrawDateGrid(Image img, Graphics g, Font font, Brush fontBrush, Pen gridPen, DateTime start, DateTime end, int dayWidth, int padding)
@@ -114,7 +158,7 @@ namespace Scheduler.Output
 			foreach (var t in tasks)
 			{
 				int x = (int)((t.Start - start).TotalDays * dayWidth);
-				int y = areas.Count > 0 ? areas[areas.Count - 1].Rect.Bottom + 2 : 1;
+				int y = areas.Count > 0 ? areas[areas.Count - 1].Rect.Bottom + 6 : 0;
 				int w = (int)(t.Time.TotalDays * dayWidth);
 
 				var a = new Area
@@ -125,22 +169,9 @@ namespace Scheduler.Output
 				var size = g.MeasureString(a.DisplayText, f);
 				a.TextRect = new Rectangle(x + 2, y + 2, (int)size.Width, (int)size.Height);
 				a.Rect = new Rectangle(x, y, w, a.TextRect.Height + 4);
-				if (t.Tasks.Count > 0)
-				{
-					a.TextRect.X = x;
-					a.TextRect.Y = y;
-					a.Rect.Height *= 2;
-					if (a.Rect.Width == 0) { a.Rect.Width = a.TextRect.Width + 4; }
-				}
-				else if (w == 0)
-				{
-					a.TextRect.X = x + 6;
-					a.TextRect.Y = y + a.Rect.Height / 2 - 8;
-				}
-				else if (a.TextRect.Width + 4 > a.Rect.Width)
-				{
-					a.TextRect.X = a.Rect.Right + 2;
-				}
+
+				if (a.Rect.Width == 0) { a.Rect.Width = 12; }
+				if (a.TextRect.Width + 4 > a.Rect.Width) { a.TextRect.X = a.Rect.Right + 2; }
 
 				areas.Add(a);
 				CreateAreas(t.Tasks, areas, start, end, dayWidth, g, f);
