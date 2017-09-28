@@ -23,7 +23,7 @@ namespace Scheduler.Output
 		{
 			int dayWidth = schedule.Metadata.ContainsKey("daywidth") ? Convert.ToInt32(schedule.Metadata["daywidth"]) : 400;
 			int padding = schedule.Metadata.ContainsKey("padding") ? Convert.ToInt32(schedule.Metadata["padding"]) : 20;
-			bool hourGrid = schedule.Metadata.ContainsKey("hourgrid") ? Convert.ToBoolean(schedule.Metadata["hourgrid"]) : false;
+			bool hourGrid = schedule.Metadata.ContainsKey("hourgrid") ? Convert.ToBoolean(schedule.Metadata["hourgrid"]) : true;
 
 			var areas = new List<Area>();
 			var connections = new List<Connection>();
