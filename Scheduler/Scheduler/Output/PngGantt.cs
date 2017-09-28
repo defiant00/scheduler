@@ -23,6 +23,7 @@ namespace Scheduler.Output
 		{
 			int dayWidth = schedule.Metadata.ContainsKey("daywidth") ? Convert.ToInt32(schedule.Metadata["daywidth"]) : 400;
 			int padding = schedule.Metadata.ContainsKey("padding") ? Convert.ToInt32(schedule.Metadata["padding"]) : 20;
+			bool hourGrid = schedule.Metadata.ContainsKey("hourgrid") ? Convert.ToBoolean(schedule.Metadata["hourgrid"]) : false;
 
 			var areas = new List<Area>();
 			var connections = new List<Connection>();
@@ -36,6 +37,7 @@ namespace Scheduler.Output
 			var font = new Font("Arial", 8);
 			var fontBrush = new SolidBrush(Color.Black);
 			var gridPen = new Pen(Color.FromArgb(128, 192, 255));
+			var subPen = new Pen(Color.FromArgb(224, 224, 255));
 			var dateBrush = new SolidBrush(Color.Blue);
 
 			var tImg = new Bitmap(1, 1, PixelFormat.Format32bppArgb);
@@ -50,12 +52,12 @@ namespace Scheduler.Output
 			var g = Graphics.FromImage(img);
 			g.SmoothingMode = SmoothingMode.AntiAlias;
 			g.Clear(Color.White);
-			DrawDateGrid(img, g, font, dateBrush, gridPen, start, end, dayWidth, padding);
+			DrawDateGrid(img, g, font, dateBrush, gridPen, subPen, start, end, dayWidth, padding, hourGrid);
 
 			var c_incomplete = Color.Red;
 			var c_complete = Color.Blue;
 
-			var connPen = new Pen(Color.DarkGray);
+			var connPen = new Pen(Color.FromArgb(96, 96, 96));
 			var incompletePen = new Pen(c_incomplete);
 			var completePen = new Pen(c_complete);
 			var areaBrush = new SolidBrush(Color.FromArgb(150, 255, 255, 255));
@@ -137,19 +139,23 @@ namespace Scheduler.Output
 			}
 		}
 
-		static void DrawDateGrid(Image img, Graphics g, Font font, Brush fontBrush, Pen gridPen, DateTime start, DateTime end, int dayWidth, int padding)
+		static void DrawDateGrid(Image img, Graphics g, Font font, Brush fontBrush, Pen gridPen, Pen subPen, DateTime start, DateTime end, int dayWidth, int padding, bool hours)
 		{
-			int count = 0;
+			DateTime curr = start.Date;
 			int x = 0;
-			int offset = (int)((1 - start.TimeOfDay.TotalDays) * dayWidth);
-			DateTime curr = start.Date.AddDays(1);
 			while (x < img.Width)
 			{
-				x = count * dayWidth + padding + offset;
-				g.DrawLine(gridPen, x, 0, x, img.Height);
-				g.DrawString($"{curr.ToShortDateString()} ({curr.DayOfWeek})", font, fontBrush, x + 1, 2);
-				count++;
-				curr = curr.AddDays(1);
+				x = (int)((curr - start).TotalDays * dayWidth) + padding;
+				if (x >= 0 && x < img.Width)
+				{
+					bool main = curr.Hour == 0;
+					g.DrawLine((main ? gridPen : subPen), x, (main ? 0 : 16), x, img.Height);
+					if (main)
+					{
+						g.DrawString($"{curr.ToShortDateString()} ({curr.DayOfWeek})", font, fontBrush, x + 1, 2);
+					}
+				}
+				curr = hours ? curr.AddHours(1) : curr.AddDays(1);
 			}
 		}
 
