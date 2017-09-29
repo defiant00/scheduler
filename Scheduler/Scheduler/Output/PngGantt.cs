@@ -182,11 +182,14 @@ namespace Scheduler.Output
 				a.TextRect = new Rectangle(x + 2, y + 2, (int)size.Width, (int)size.Height);
 				a.Rect = new Rectangle(x, y, w, a.TextRect.Height + 4);
 
-				if (a.Rect.Width == 0)
+				int minWidth = t.Tasks.Count > 0 ? 8 : 2;
+
+				if (t.Time == TimeSpan.Zero)
 				{
 					a.Rect.X -= 6;
 					a.Rect.Width = 12;
 				}
+				else if (a.Rect.Width < minWidth) { a.Rect.Width = minWidth; }
 				if (a.TextRect.Width + 4 > a.Rect.Width) { a.TextRect.X = a.Rect.Right + 2; }
 
 				areas.Add(a);
