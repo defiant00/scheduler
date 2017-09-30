@@ -136,7 +136,7 @@ namespace Scheduler
 						completePercent += percent;
 					}
 
-					return totalTime.TotalMilliseconds > 0 ? (completeTime.TotalMilliseconds / totalTime.TotalMilliseconds) * 100 : (completePercent / totalPercent);
+					return (totalTime.TotalMilliseconds > 0 ? (completeTime.TotalMilliseconds / totalTime.TotalMilliseconds) : (completePercent / totalPercent)) * 100;
 				}
 				set { _Percent = value; }
 			}
